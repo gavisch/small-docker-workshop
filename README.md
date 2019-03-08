@@ -2,6 +2,12 @@
 
 Quick workshop on using docker for your hacks so you don't have to keep saying "It works on my machine" to your team members :thumbsup:
 
+## Pre-requisites
+- A terminal (depends on your OS!)
+- Working docker installation (See below)
+- npm and nodejs are installed [(Click here for instructions)](https://www.npmjs.com/get-npm)
+- A docker hub account [(Click here for a quickstart)](https://docs.docker.com/docker-hub/)
+
 ## Install docker CE
 
 Go over to [https://docs.docker.com/install/](https://docs.docker.com/install/) and install the version of docker you need for your operating system. Also make sure to [install docker-compose](https://docs.docker.com/compose/install/)!
@@ -85,25 +91,99 @@ Docker should have gone to the docker hub, pulled the hello-world image and ran 
 With this, you should be good to continue.
 
 ## Building your first dockerized app!
-### Pre-requisites
-- docker is installed and working
-- npm and nodejs are installed [(Click here for instructions)](https://www.npmjs.com/get-npm)
-
 ### Setting up your app
-First start by making a little folder called `tinyapp` and navigating into it:
+First start by making a little folder called `tinyapp`, navigate into it, and initiate npm:
 
 ```bash
 
 mkdir tinyapp
 cd tinyapp
+npm init -y
 
 ```
 
-Initialize your nodejs app and install some stuff we need:
+Now we need to install Express, a minimalistic web framework for node [(click here info)](https://expressjs.com)
 
 ```bash
 
-npm init -y
+npm install express
+
+```
+
+Next we need to modify our package.json to add easy start script. Open up package.json with your favorite text editor and add the line `"start": "node app.js",` under `"scripts: {"`. Your package.json should look like this now:
+
+```json
+
+{
+  "name": "babyapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.4"
+  }
+}
+
+
+```
+
+We're just missing our app file. Lets add it!
+
+```bash
+
+touch app.js
+
+```
+
+Open app.js with your favorite text editor (vim is #1) and add this to it:
+
+```nodejs
+
+const express = require('express')
+const app = express()
+const port = 3000
+
+app.get('/', (req, res) => res.send('Hello World!'))
+
+app.listen(port, () => console.log(`Tiny app listening on port ${port}!`))
+
+```
+
+If you're not sure what you're looking at above. I recommend reading [this](https://expressjs.com/en/starter/hello-world.html)
+
+All we have to do now is run our little app through that nice script we added in our package.json
+
+```bash
+
+npm start
+
+```
+
+A little message should pop up with `Tiny app listening on port 3000!`. Open up your browser and go to `http://localhost:3000` and you'll see the words "Hello World!"
+
+Your project folder should look like this:
+
+```ASCII
+
+tinyapp
++-- node_modules
++-- app.js
++-- package-lock.json
++-- package.json
+
+```
+
+Great! We got a little app going, so now lets dockarize it!
+
+### Dockarizing your tiny app
+
+Lets go back to our
 
 TODO Consider making the nodejs app real quick, adding it to repo then just referencing things about it
 
