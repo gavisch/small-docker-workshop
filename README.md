@@ -84,10 +84,30 @@ Docker should have gone to the docker hub, pulled the hello-world image and ran 
 
 With this, you should be good to continue.
 
-##
+## Building your first dockerized app!
+### Pre-requisites
+- docker is installed and working
+- npm and nodejs are installed [(Click here for instructions)](https://www.npmjs.com/get-npm)
 
+### Setting up your app
+First start by making a little folder called `tinyapp` and navigating into it:
+
+```bash
+
+mkdir tinyapp
+cd tinyapp
+
+```
+
+Initialize your nodejs app and install some stuff we need:
+
+```bash
+
+npm init -y
 
 TODO Consider making the nodejs app real quick, adding it to repo then just referencing things about it
+
+## Commands to remember
 
 
 ## Troubleshooting
