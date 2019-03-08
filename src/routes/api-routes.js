@@ -17,7 +17,7 @@ router.route('/keyboards')
   .get(keyboardController.index)
   .post(keyboardController.new);
 
-router.route('/keyboards/:keyboards_id')
+router.route('/keyboards/:keyboard_id')
   .get(keyboardController.view)
   .patch(keyboardController.update)
   .put(keyboardController.update)
