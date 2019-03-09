@@ -90,15 +90,15 @@ With this, you should be good to continue.
 First start by making a little folder called `tinyapp`, navigate into it, and initiate npm:
 
 ```bash
-mkdir tinyapp
-cd tinyapp
-npm init -y
+$ mkdir tinyapp
+$ cd tinyapp
+$ npm init -y
 ```
 
 Now we need to install Express, a minimalistic web framework for node [(click here info)](https://expressjs.com)
 
 ```bash
-npm install express
+$ npm install express
 ```
 
 Next we need to modify our package.json to add easy start script. Open up package.json with your favorite text editor and add the line `"start": "node app.js",` under `"scripts: {"`. Your package.json should look like this now:
@@ -124,7 +124,7 @@ Next we need to modify our package.json to add easy start script. Open up packag
 We're just missing our app file. Lets add it!
 
 ```bash
-touch app.js
+$ touch app.js
 ```
 
 Open app.js with your favorite text editor (vim is #1) and add this to it:
@@ -144,7 +144,7 @@ If you're not sure what you're looking at above. I recommend reading [this](http
 All we have to do now is run our little app through that nice script we added in our package.json
 
 ```bash
-npm start
+$ npm start
 ```
 
 A little message should pop up with `Tiny app listening on port 3000!`. Open up your browser and go to `http://localhost:3000` and you'll see the words "Hello World!"
@@ -168,7 +168,7 @@ Your docker should be good to go for this part. We're going to be making what is
 First, lets make our Dockerfile
 
 ```bash
-mkdir Dockerfile
+$ mkdir Dockerfile
 ```
 
 Docker images are made with other docker images that end up building on one another. In this case, we're going to add a base image called node:latest. This base image will come with the essentials needed to start a nodejs app. Add the FROM instruction to your Dockerfile:
@@ -240,7 +240,7 @@ If we were to build our container now, we'd take everything inside our tinyapp d
 Create a .dockerignore file:
 
 ```bash
-touch .dockerignore
+$ touch .dockerignore
 ```
 
 Inside the file, add the following:
@@ -270,13 +270,13 @@ tinyapp/
 Now we're ready to build the image! To do this, we will use the __docker build__ command with the -t flag. The -t flag lets you tag an image with a name of your choosing. Without doing this, your images will end up being a weird default name. We're going to tag this as `tinyapp-demo` but you can change it to whatever you want. And make sure to subtitute `your_dockerhub_username` for your actual docker hub username. We will be publishing this tinyapp image to Docker Hub later! In your terminal, run the following command:
 
 ```bash
-docker build -t your_dockerhub_username/tinyapp-demo .
+$ docker build -t your_dockerhub_username/tinyapp-demo .
 ```
 
 It'll take a few minutes, but once that's over we can look at our image:
 
 ```bash
-docker images
+$ docker images
 ```
 
 You should see:
@@ -296,20 +296,265 @@ Now we will use the __docker run__ command with three flags:
 Run this command to build our container:
 
 ```bash
-docker run --name tinyapp-demo -p 80:3000 -d your_dockerhub_username/tinyapp-demo
+$ docker run --name tinyapp-demo -p 80:3000 -d your_dockerhub_username/tinyapp-demo
 ```
 
 Once the container is running, you can check it out and other containers that are running with __docker ps__:
 
 ```bash
-docker ps
+$ docker ps
 ```
 
+The output looks like this:
 
-# TODO Consider making the nodejs app real quick, adding it to repo then just referencing things about it
+```bash
+CONTAINER ID        IMAGE                  COMMAND             CREATED             STATUS              PORTS                  NAMES
+c479e95cfe56        gavisch/tinyapp-demo   "npm start"         About an hour ago   Up About an hour    0.0.0.0:80->3000/tcp   tinyapp-demo
+```
 
-## Commands to remember
+Note the PORTS section. We should be able to hit our app `0.0.0.0:80` through localhost. Let's try it! You can either open up a browser and enter http://localhost as the url, or `curl localhost`, or you can use postman to do a get on http://localhost. Let's do the curl command:
 
+```bash
+$ curl localhost
+```
+
+Our output is:
+
+```bash
+Hello World!
+```
+
+### Using a repo with your images
+
+Lets make our image available to our friends by making use of that Docker Hub account we made. The first step is to login to the Hub:
+
+```bash
+docker login -u your_dockerhub_username
+```
+
+Enter your password when prompted and you should see `Login Succeeded`
+
+Now we push our image to our repo for the rest of our team members to use:
+
+```bash
+$ docker push your_dockerhub_username/tinyapp-demo
+```
+
+Lets get rid of our local image and pull the tinyapp-demo image that we just pushed. So lets begin with some cleaning! First lets see and stop our container. We're going to do that by running __docker ps__ to see what containers are running then use __docker stop containerID_or_name__:
+
+```bash
+$ docker ps
+CONTAINER ID        IMAGE                  COMMAND             CREATED             STATUS              PORTS                  NAMES
+c479e95cfe56        gavisch/tinyapp-demo   "npm start"         15 hours ago        Up 15 hours         0.0.0.0:80->3000/tcp   tinyapp-demo
+
+$ docker stop tinyapp-demo
+tinyapp-demo
+```
+
+Now, we're going to look at what images we got saved locally and then delete them all:
+
+```bash
+$ docker images -a
+REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
+gavisch/tinyapp-demo   latest              dbf67dfc122e        15 hours ago        906MB
+<none>                 <none>              2505fd0f466d        15 hours ago        906MB
+<none>                 <none>              38048835c2a9        15 hours ago        906MB
+<none>                 <none>              51ee47d4031e        15 hours ago        906MB
+<none>                 <none>              910e094a4046        15 hours ago        904MB
+<none>                 <none>              c515ca355a78        15 hours ago        904MB
+node                   latest              9ff38e3a6d9d        38 hours ago        904MB
+
+$ docker system prune -a
+```
+
+`docker system prune -a` removes all of the following:
+
+- all stopped containers
+- all networks not used by at least one container
+- all images without at least one container associated to them
+- all build cache
+
+Now we can pull our image and see that it's available locally:
+
+```bash
+$ docker pull your_dockerhub_username/tinyapp-demo
+
+$ docker images
+REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
+gavisch/tinyapp-demo   latest              dbf67dfc122e        15 hours ago        906MB
+```
+
+Then we can run it again, see it running and test it:
+
+```bash
+$ docker run --name tinyapp-demo -p 80:3000 -d your_dockerhub_username/tinyapp-demo
+
+$ docker ps
+CONTAINER ID        IMAGE                  COMMAND             CREATED             STATUS              PORTS                            NAMES
+2456142b1176        gavisch/tinyapp-demo   "npm start"         6 seconds ago       Up 4 seconds        3000/tcp, 0.0.0.0:80->3000/tcp   tinyapp-demo
+
+$ curl localhost
+Hello World!
+```
+
+Congratulations! You just learned a ton of stuff on docker. Now you're ready for using docker with docker compose :thumbsup:!
+
+### A few more useful commands
+If you are ever in need, you can always run `docker --help` to find a list of commands you can use. You can then do docker `<command> --help` to get more info on what options are available for any command.
+
+If you ever run into the problem where you have a container named "blah" and are trying to make another named "blah", you can remove the old container with `docker rm container_name`. Now you should be able to create your new container.
+
+If `docker system prune` is too scary or you just want to selectively remove images then use `docker rmi image_name`.
+
+## Docker compose!
+
+Now that you know how to stand up a little dockerized app we will move onto creating a RESTful API with NodeJS, Express and Mongodb in docker! The good news is that you don't actually need to install any of these. We're going to let our image do that for us.
+
+### Prerequisites
+
+- Install docker-compose
+- Clone this repo down
+
+### Composing your keyboard tracker API
+
+For this part, we will be using a docker tool called __compose__ that allows us to build multi-container applications. Trying to connect multiple containers together is a pain so __compose__ allows us to create a __docker-compose.yml__ file that will hold all the instructions for our app to build and run with just a simple __docker-compose up__ command.
+
+Make sure to do some light reading on the [docker compose documentation](https://docs.docker.com/compose/)]
+
+Since this workshop is about docker, we're not going to actually talk about nodejs, mongodb and other stuff too much. Just know that the keyboard tracker api is an Express app that works like any other api. You can create, read, update and delete entries into a mongodb database through calls.
+
+If you want more information, [checkout this tutorial](https://medium.com/@dinyangetoh/how-to-build-simple-restful-api-with-nodejs-expressjs-and-mongodb-99348012925d). I actually learned from this example to build a little app a while ago. It's not the greatest app but it's mine.
+
+Our directory structure should look like this:
+
+```bash
+smol-workshop/
+├── docker-compose.yml
+├── Dockerfile
+├── package.json
+├── package-lock.json
+├── README.md
+├── src/
+└── tinyapp/ ## Ignore tinyapp
+```
+
+Let's take a look at that Dockerfile and talk about what's different between this one and the previous tinyapp one we made:
+
+```Dockerfile
+FROM node:latest
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 8080
+CMD [ "npm", "start" ]
+```
+
+Look at that! It's basically the same except we're using port 8080.
+
+Now that we have the Dockerfile, we will need a docker-compose.yml file. This file will hold the instructions for building our multi-container docker application. Lets take a look at it:
+
+```yml
+version: "3"
+services:
+  app:
+    container_name: keyboard-api
+    restart: always
+    build: ./
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    depends_on:
+      - mongo
+  mongo:
+    container_name: mongo
+    image: mongo
+    ports:
+      - "27017:27017"
+```
+
+In this file, we declare two sevices `app` and `mongo`. I'm grabbing the instructions above and putting them into one line for readability. Lets break this file down starting with `app`:
+
+- `container_name: keyboard-api` We set this to be keyboard-api so docker doesn't automatically set the container name for us
+- `restart: always` This allows us to restart the server whenever an error code gets thrown. Many will get thrown as you work on your API so its best to leave this on always
+- `build: ./` This specifies what directory to do a build command on. Remember when we did that __docker build__ command in tinyapp? This option does the same thing
+- `ports: 80:8080` This is the same as the `-p 80:3000` flag we set on __docker run__ in tinyapp above. We set the host (your computer) port to 80 and bind port 3000 within our container to it. This letts our container talk to our host machine
+- `volumes: .:app/` A volume is a directory we specify to be mounted onto our container. This allows us to share files between the host and the container between containers. In this case, we're adding our smol-workshop folder to a folder inside our container called app/. Remember that is the WORKDIR we set within our Dockerfile!
+- `depends_on: mongo` We add this to make sure that our mongo container spins up first before our keyboard-api container. That way we can guarantee that mongodb is ready to be connected to from our api
+
+And for `mongo`:
+
+- `container_name: mongo` Same thing as above. We add a name ourselves so docker doesn't
+- `image: mongo` This pulls the official mongodb image from Docker Hub. Similar to our FROM command inside the Dockerfile
+- `ports: "27017:27017"` This binds the port 27017 on our host to the mongodbs default port inside the container. We're basically using our host as a network bridge between containers.
+
+Now comes a part I always forget, setting the mongodb connection URL inside our app to point to the mongodb container.
+
+Inside `src/index.js`, scroll down to this line:
+
+```javascript
+// Connect to Mongoose and set connection variable
+mongoose.connect('mongodb://localhost:27017/expressmongo');
+```
+
+And change it to point to our new mongo container's IP. `mongo` will work similarly to `localhost` but instead of 127.0.0.1 it will be whatever IP address our mongo container has. Change it now:
+
+```javascript
+// Connect to Mongoose and set connection variable
+mongoose.connect('mongodb://mongo:27017/expressmongo');
+```
+
+Now we're ready to spin up our containers! Let's go to our terminal run the docker compose file:
+
+```bash
+$ docker compose up
+```
+
+A bunch of stuff should happen now as our containers are built and ran! If all goes well, you should see the following towards the bottom of all those lines that popped up:
+
+```bash
+keyboard-api | Running RestHub on port 8080
+```
+
+You can also run it in __detached__ mode by adding the __-d__ flag at the end `docker-compose up -d`
+
+Let's check out our API!
+
+These are the URIs:
+
+__GET__ /api/keyboards
+__POST__ /api/keyboards
+__GET__ /api/keyboards/:id
+__PUT__ /api/keyboards/:id
+__PATCH__ /api/keyboards/:id
+__DELETE__ /api/keyboards/:id
+
+You can either test it in postman or through curl. In this case, we'll use curl:
+
+```bash
+$ curl -X POST \
+  http://localhost:8080/api/keyboards \
+  -H 'Cache-Control: no-cache' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'name=Planck&style=ortholinear&switch=Zealio%2065g'
+```
+
+This will add a new keyboard entry into mongodb. Lets retrieve it!
+
+```bash
+$ curl -X GET \
+  http://localhost:8080/api/keyboards/
+
+{"status":"success","message":"Sweet keyboards successfully retrieved!","data":[{"_id":"5c8413f28eb193001ed66783","create_date":"2019-03-09T19:28:50.537Z","name":"Planck","style":"ortholinear","switch":"Zealio 65g","__v":0}]}
+```
+
+You just got yourself a nodejs express api with mongodb! yay :smile:
 
 ## Troubleshooting
 
