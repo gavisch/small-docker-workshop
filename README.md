@@ -3,6 +3,7 @@
 Quick workshop on using docker for your hacks so you don't have to keep saying "It works on my machine" to your team members :thumbsup:
 
 ## Pre-requisites
+
 - A terminal (depends on your OS!)
 - Working docker installation (See below)
 - npm and nodejs are installed [(Click here for instructions)](https://www.npmjs.com/get-npm)
@@ -19,25 +20,19 @@ Depending on your operating system, you might want to make sure you can run dock
 Add your username to the docker group:
 
 ``` bash
-
 sudo usermod -aG ocker ${USER}
-
 ```
 
 Apply the new group membership by typing the following and entering your sudo password:
 
 ``` bash
-
 su - ${USER}
-
 ```
 
 And confirm your user is now part of the **docker** group with:
 
 ``` bash
-
 id -nG
-
 ```
 
 ### Can't get docker running locally?
@@ -95,25 +90,20 @@ With this, you should be good to continue.
 First start by making a little folder called `tinyapp`, navigate into it, and initiate npm:
 
 ```bash
-
 mkdir tinyapp
 cd tinyapp
 npm init -y
-
 ```
 
 Now we need to install Express, a minimalistic web framework for node [(click here info)](https://expressjs.com)
 
 ```bash
-
 npm install express
-
 ```
 
 Next we need to modify our package.json to add easy start script. Open up package.json with your favorite text editor and add the line `"start": "node app.js",` under `"scripts: {"`. Your package.json should look like this now:
 
 ```json
-
 {
   "name": "babyapp",
   "version": "1.0.0",
@@ -129,22 +119,17 @@ Next we need to modify our package.json to add easy start script. Open up packag
     "express": "^4.16.4"
   }
 }
-
-
 ```
 
 We're just missing our app file. Lets add it!
 
 ```bash
-
 touch app.js
-
 ```
 
 Open app.js with your favorite text editor (vim is #1) and add this to it:
 
 ```nodejs
-
 const express = require('express')
 const app = express()
 const port = 3000
@@ -152,7 +137,6 @@ const port = 3000
 app.get('/', (req, res) => res.send('Hello World!'))
 
 app.listen(port, () => console.log(`Tiny app listening on port ${port}!`))
-
 ```
 
 If you're not sure what you're looking at above. I recommend reading [this](https://expressjs.com/en/starter/hello-world.html)
@@ -160,32 +144,169 @@ If you're not sure what you're looking at above. I recommend reading [this](http
 All we have to do now is run our little app through that nice script we added in our package.json
 
 ```bash
-
 npm start
-
 ```
 
 A little message should pop up with `Tiny app listening on port 3000!`. Open up your browser and go to `http://localhost:3000` and you'll see the words "Hello World!"
 
 Your project folder should look like this:
 
-```ASCII
-
-tinyapp
-+-- node_modules
-+-- app.js
-+-- package-lock.json
-+-- package.json
-
+```text
+tinyapp/
+├── app.js
+├── node_modules
+├── package.json
+└── package-lock.json
 ```
 
 Great! We got a little app going, so now lets dockarize it!
 
 ### Dockarizing your tiny app
 
-Lets go back to our
+Your docker should be good to go for this part. We're going to be making what is called a Dockerfile. A Dockerfile is basically the recipe of what will be included in your application container when it's ran. Using this file lets you define your container environment to avoid problems with dependencies or runtime versions. It lets you avoid the whole "but it works on my machine" problem!
 
-TODO Consider making the nodejs app real quick, adding it to repo then just referencing things about it
+First, lets make our Dockerfile
+
+```bash
+mkdir Dockerfile
+```
+
+Docker images are made with other docker images that end up building on one another. In this case, we're going to add a base image called node:latest. This base image will come with the essentials needed to start a nodejs app. Add the FROM instruction to your Dockerfile:
+
+```Dockerfile
+FROM node:latest
+```
+
+Lets set what our work directory will be inside our container with the WORKDIR instruction:
+
+```Dockerfile
+WORKDIR app/
+```
+
+Remember to set a WORKDIR. Docker will just make one for you if you don't. That can be problematic later on!
+
+Now we have to install our app depenencies onto the container. Lets get our package.json and package-lock.json files into the container by using the COPY instructuion to copy them:
+
+```Dockerfile
+COPY package*.json ./
+```
+
+The `*` is a wildcard that will look ahead past package towards .json. This will grab anything that starts with package and ends in .json which includes package-lock.json!
+
+The `./` at the end is actually the WORKDIR we set earlier `app/`. Docker knows that every command after setting the WORKDIR will be inside that specified folders context. We could use just `.` but we need `./` since we are copying more than one file to our work directory.
+
+We then install our dependencies with the RUN instruction:
+
+```Dockerfile
+RUN npm install
+```
+
+Next, lets copy our app into the WORKDIR we set:
+
+```Dockerfile
+COPY . .
+```
+
+Those two dots are weird, right? The `.` means current directory. Remember we put the Dockerfile in the same folder alongside the rest of your application. That `.` will grab everything inside the directory the Dockerfile sits in and puts it inside our WORKDIR `app/` inside the container.
+
+Finally, we can expose port 3000 (the port we set in our app.js) and start the app:
+
+```Dockerfile
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+Oddly enough, EXPOSE doesn't actually expose any ports. It's more for documenting what port the container will publish at runtime. CMD runs the "start" npm script we made earlier in our package.json. Do note that there should only be one CMD instruction in a Dockerfile. If you have multiple, only the last one will actually run.
+
+Awesome! We have a Dockerfile! There's a lot more instructions you can use [(click here)](https://docs.docker.com/engine/reference/builder/) but for now our Dockefile should look like this:
+
+```Dockerfile
+FROM node:latest
+
+WORKDIR /app
+
+COPY package*.json .
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+CMD [ "npm", "start" ]
+```
+
+If we were to build our container now, we'd take everything inside our tinyapp directory. Lets build a .dockerignore to ignore some of the files and directories we don't want copied into our container.
+
+Create a .dockerignore file:
+
+```bash
+touch .dockerignore
+```
+
+Inside the file, add the following:
+
+```text
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+```
+
+`.git` and `.gitignore` are in there just in case you're working with git.
+
+At this point, your tinyapp directory should look like this:
+
+```test
+tinyapp/
+├── app.js
+├── Dockerfile
+├── node_modules
+├── package.json
+└── package-lock.json
+```
+
+Now we're ready to build the image! To do this, we will use the __docker build__ command with the -t flag. The -t flag lets you tag an image with a name of your choosing. Without doing this, your images will end up being a weird default name. We're going to tag this as `tinyapp-demo` but you can change it to whatever you want. And make sure to subtitute `your_dockerhub_username` for your actual docker hub username. We will be publishing this tinyapp image to Docker Hub later! In your terminal, run the following command:
+
+```bash
+docker build -t your_dockerhub_username/tinyapp-demo .
+```
+
+It'll take a few minutes, but once that's over we can look at our image:
+
+```bash
+docker images
+```
+
+You should see:
+
+```bash
+REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
+gavisch/tinyapp-demo   latest              00d9d4aac61f        4 seconds ago       906MB
+node                   latest              9ff38e3a6d9d        23 hours ago        904MB
+```
+
+Now we will use the __docker run__ command with three flags:
+
+- __-p__ This flag publishes the port on the container and maps it to our host. We will be using port 80 on our host but you can change it to whatever you want if necessary.
+- __-d__ This runs our container in detached mode. That's a fancy phrase for in the background
+- __--name__ This lets us name our container whatever memorable name we want
+
+Run this command to build our container:
+
+```bash
+docker run --name tinyapp-demo -p 80:3000 -d your_dockerhub_username/tinyapp-demo
+```
+
+Once the container is running, you can check it out and other containers that are running with __docker ps__:
+
+```bash
+docker ps
+```
+
+
+# TODO Consider making the nodejs app real quick, adding it to repo then just referencing things about it
 
 ## Commands to remember
 
